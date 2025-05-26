@@ -9,21 +9,22 @@ class VoiceReconService:
     def __init__(self):
         self.recognizer = sr.Recognizer()
         self.microphone = sr.Microphone()
-        # self.loop = asyncio.new_event_loop()
-        # asyncio.set_event_loop(self.loop)
-    def recognize_voice(self) -> str:
+    def recognize_voice(self) -> str | None:
         
         with self.microphone as source:
-            print("Say something!")
+            #print("Say something!")
             audio =  self.recognizer.listen(source)
         # recognize speech using Google Speech Recognition
         try:
             d = self.recognizer.recognize_google(audio)
             return d
         except Exception as e:
-            print("Could not understand audio")
+            #print("Could not understand audio")
             return None
-    
-    def recognize_voice_task(self):
-        result = self.loop.run_until_complete(self.recognize_voice())
+    def recognize_voice_async(self) -> asyncio.Future[str | None]:
+        loop = asyncio.get_event_loop()
+        result = loop.run_in_executor(None, self.recognize_voice)
         return result
+    
+    
+    
