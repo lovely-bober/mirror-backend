@@ -1,3 +1,4 @@
 flask
-celery
 flask_socketio
+SpeechRecognition
+pyaudio

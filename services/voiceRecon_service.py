@@ -1,7 +1,7 @@
 from celery import shared_task
-import asyncio
 import os
 import speech_recognition as sr
+import concurrent.futures
 
 
 
@@ -9,22 +9,19 @@ class VoiceReconService:
     def __init__(self):
         self.recognizer = sr.Recognizer()
         self.microphone = sr.Microphone()
-    def recognize_voice(self) -> str | None:
-        
-        with self.microphone as source:
+    def recognize_voice_async(self): 
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            future = executor.submit(recognize_voice, self.recognizer, self.microphone)
+            return future
+def recognize_voice(recognizer, microphone) -> str | None:
+        with microphone as source:
             #print("Say something!")
-            audio =  self.recognizer.listen(source)
+            audio = recognizer.listen(source)
         # recognize speech using Google Speech Recognition
         try:
-            d = self.recognizer.recognize_google(audio)
+            d = recognizer.recognize_google(audio)
+            print(f"Google Speech Recognition thinks you said: {d}")
             return d
         except Exception as e:
-            #print("Could not understand audio")
+            print(f"Could not understand audio: {e}")
             return None
-    def recognize_voice_async(self) -> asyncio.Future[str | None]:
-        loop = asyncio.get_event_loop()
-        result = loop.run_in_executor(None, self.recognize_voice)
-        return result
-    
-    
-    
