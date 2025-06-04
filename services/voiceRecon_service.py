@@ -25,3 +25,5 @@ def recognize_voice(recognizer, microphone) -> str | None:
         except Exception as e:
             print(f"Could not understand audio: {e}")
             return None
+        
+        
