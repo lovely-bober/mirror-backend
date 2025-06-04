@@ -9,6 +9,10 @@ from mediapipe.tasks.python import vision
 
 class GesturesService():
     def __init__(self):
+        self.recognizer = None
+        self.cam = cv2.VideoCapture(0)
+        self.current_gesture = None
+        
         base_opts = python.BaseOptions(model_asset_path='gesture_recognizer.task')
         options = vision.GestureRecognizerOptions(
             base_options=base_opts,
@@ -17,9 +21,8 @@ class GesturesService():
             min_hand_detection_confidence=0.5,
             min_hand_presence_confidence=0.5,
             min_tracking_confidence=0.5,
-            result_callback=on_result
+            result_callback=self.on_result
         )
-        self.recognizer = None
         try:
             self.recognizer = vision.GestureRecognizer.create_from_options(options)
         except Exception as e:
@@ -32,7 +35,6 @@ class GesturesService():
         # )
         # self.picam2.configure(cfg)
         # self.picam2.start()
-        self.cam = cv2.VideoCapture(0)
         if not self.cam.isOpened():
             raise RuntimeError("Failed to open camera")
         self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
@@ -64,15 +66,20 @@ class GesturesService():
             self.recognizer.close()
         print("GesturesService stopped")
 
-def on_result(result, image, timestamp_ms):
-        # result.gestures is a list of lists (one per hand). Skip if empty.
-        if not result.gestures:
-            return
+    def on_result(self, result, image, timestamp_ms):
+            # result.gestures is a list of lists (one per hand). Skip if empty.
+            if not result.gestures:
+                return
 
-        for hand_idx, gestures_per_hand in enumerate(result.gestures):
-            if not gestures_per_hand:
-                continue
-            top_gesture = gestures_per_hand[0]
-            print(f"→ Hand {hand_idx}: {top_gesture.category_name} "
-                f"({top_gesture.score:.2f}) at {timestamp_ms}")
-            
+            for hand_idx, gestures_per_hand in enumerate(result.gestures):
+                if not gestures_per_hand:
+                    continue
+                top_gesture = gestures_per_hand[0]
+                if top_gesture.category_name != "None":
+                    print(f"→ Hand {hand_idx}: {top_gesture.category_name} "
+                    f"({top_gesture.score:.2f}) at {timestamp_ms}")
+                    if self.current_gesture != top_gesture.category_name:
+                        self.current_gesture = top_gesture.category_name
+                
+                
+                

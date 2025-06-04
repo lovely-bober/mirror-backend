@@ -29,19 +29,27 @@ def init_services():
     from services.gestures_service import GesturesService
     from services.voiceRecon_service import VoiceReconService
     from services.smartHome_service import SmartHomeService
+    
+ 
 
     gestures_service = GesturesService()
     voice_recon_service = VoiceReconService()
     smart_home_service = SmartHomeService()
     print("Services initialized")
-    recon = voice_recon_service.recognize_voice_async()
+    last_voice_command = None
+    last_gesture = None
+    #recon.add_done_callback(lambda future: on_voice_recognition_result(future.result()))
+
     while True: 
-        if recon.done():
-            if recon.result():
-                socketio.emit("voice_recognition_result", {"result": recon.result()})
-            recon = voice_recon_service.recognize_voice_async()
+        if voice_recon_service.current_voice_command != None and voice_recon_service.current_voice_command != last_voice_command:
+            socketio.emit("voice_recognition_result", {"command": voice_recon_service.current_voice_command})
+            last_voice_command = voice_recon_service.current_voice_command
+        if gestures_service.current_gesture != None and gestures_service.current_gesture != last_gesture:
+            socketio.emit("gesture_recognition_result", {"gesture": gestures_service.current_gesture})
+            last_gesture = gestures_service.current_gesture
         socketio.sleep(0)
             
+    
 
 @socketio.on("connect")
 def handle_connect():
