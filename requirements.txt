@@ -4,5 +4,6 @@ SpeechRecognition
 pyaudio
 opencv-python-headless
 mediapipe
-picamera2
-rpi-libcamera
+requests
+#picamera2
+#rpi-libcamera

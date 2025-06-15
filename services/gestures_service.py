@@ -56,7 +56,7 @@ class GesturesService():
             frame = cv2.flip(frame, 1)
             rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
-            ts = time.time_ns() // 1_000_000
+            ts = time.process_time_ns() // 1_000_000
             self.recognizer.recognize_async(mp_image, ts)
     def stop(self):
         if self.picam2:
