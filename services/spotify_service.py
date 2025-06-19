@@ -3,7 +3,7 @@ import requests
 
 class SpotifyService:
     def __init__(self):
-        self.mopidy_url = "http://localhost:6680/mopidy/rpc"
+        self.mopidy_url = "http://localhost:6681/mopidy/rpc"
         self.command_list = {
             "play": self.play,
             "stop": self.stop,
@@ -20,7 +20,8 @@ class SpotifyService:
             playlists = response.json().get("result", [])
             if playlists:
                 first_playlist_uri = playlists[0]["uri"]
-                resp = requests.post(self.mopidy_url, json={"jsonrpc": "2.0", "id": 1, "method": "core.tracklist.add", "params": [first_playlist_uri]})
+                resp = requests.post(self.mopidy_url, json={"jsonrpc": "2.0", "id": 1, "method": "core.tracklist.add", "params": {"uris": [first_playlist_uri]}})
+                #print(f"tracklist response: {resp.json()}")
                 print(f"Loaded first playlist: {first_playlist_uri}")
         except requests.RequestException as e:
             print(f"Error initializing SpotifyService: {e}")
@@ -31,7 +32,7 @@ class SpotifyService:
     def play(self):
         """Starts playback of the current track."""
         try:
-            response = requests.post(self.mopidy_url, json={"method": "core.playback.play"})
+            response = requests.post(self.mopidy_url, json={"jsonrpc": "2.0", "id": 1,"method": "core.playback.play"})
             response.raise_for_status()
             print("Playback started.")
         except requests.RequestException as e:

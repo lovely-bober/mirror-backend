@@ -2,7 +2,8 @@ import time
 import cv2
 import mediapipe as mp
 import threading
-#from picamera2 import Picamera2
+
+from picamera2 import Picamera2
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 
@@ -10,7 +11,7 @@ from mediapipe.tasks.python import vision
 class GesturesService():
     def __init__(self):
         self.recognizer = None
-        self.cam = cv2.VideoCapture(0)
+        #self.cam = cv2.VideoCapture(0)
         self.current_gesture = None
         
         base_opts = python.BaseOptions(model_asset_path='gesture_recognizer.task')
@@ -29,16 +30,16 @@ class GesturesService():
             print("‼️ Failed to load classifier. Check your .task file. Error:\n", e)
 
         # 2) Spin up a square camera feed (320×320)
-        # self.picam2 = Picamera2()
-        # cfg = self.picam2.create_preview_configuration(
-        #     main={"format": "BGR888", "size": (320, 320)}
-        # )
-        # self.picam2.configure(cfg)
-        # self.picam2.start()
-        if not self.cam.isOpened():
-            raise RuntimeError("Failed to open camera")
-        self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
-        self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 320)
+        self.picam2 = Picamera2()
+        cfg = self.picam2.create_preview_configuration(
+            main={"format": "BGR888", "size": (320, 320)}
+        )
+        self.picam2.configure(cfg)
+        self.picam2.start()
+        # if not self.cam.isOpened():
+        #     raise RuntimeError("Failed to open camera")
+        # self.cam.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+        # self.cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 320)
         
         thread = threading.Thread(target=self.main_loop, daemon=True)
         thread.start()
@@ -49,8 +50,8 @@ class GesturesService():
 
     def main_loop(self):
         while True:
-            ret, frame = self.cam.read()
-            #frame = self.picam2.capture_array()
+            #ret, frame = self.cam.read()
+            frame = self.picam2.capture_array()
             if frame is None:
                 return
             frame = cv2.flip(frame, 1)

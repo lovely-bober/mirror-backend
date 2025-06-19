@@ -45,26 +45,36 @@ def init_services():
     smart_home_service = SmartHomeService()
     spotify_service = SpotifyService()
     print("Services initialized")
-    last_voice_command = None
+    last_voice_time = 0
     last_gesture_time = 0
+    last_gesture = None
     # The main loop of the application, it runs in a background thread and handles events from the services.
     # It emits events to the client and executes commands based on the events.
     while True: 
-        if voice_recon_service.current_voice_command != None:
+        if voice_recon_service.current_voice_command != None and last_voice_time + 10 < time.time():
             # emits are for GUI
             socketio.emit("voice_recognition_result", {"command": voice_recon_service.current_voice_command})
             voice_command_handler(voice_recon_service.current_voice_command)
             last_voice_command = voice_recon_service.current_voice_command
-        if gestures_service.current_gesture != None and last_gesture_time + 30 < time.time():
+            last_voice_time = time.time()
+            voice_recon_service.current_voice_command = None
+        if gestures_service.current_gesture != None and  gestures_service.current_gesture != last_gesture:
+            print(f"Gesture recognized: {gestures_service.current_gesture}")
             socketio.emit("gesture_recognition_result", {"gesture": gestures_service.current_gesture})
-            gesture_command_handler(gestures_service.current_gesture)
+            gesture_command_handler(gestures_service.current_gesture.lower())
+            last_gesture_time = time.time()
+            last_gesture = gestures_service.current_gesture
+        if last_gesture_time + 45 < time.time():
+            # if no gesture is recognized for 45 seconds, reset the last gesture
+            print("No gesture recognized for 45 seconds, resetting last gesture")
+            last_gesture = None
+            gestures_service.current_gesture = None
             last_gesture_time = time.time()
         socketio.sleep(0)
             
     
 # IMPORTANT: services are initialized only when the client connects to the server.
 @socketio.on("connect")
-
 def handle_connect():
     """This function is called when a client connects to the server. """
     start_background_tasks()
@@ -98,43 +108,75 @@ def voice_command_handler(command: str):
     global spotify_service
     
     simple_commands = {
-        "play": spotify_service.play,
-        "pause": spotify_service.stop,
-        "next": spotify_service.next,
-        "previous": spotify_service.previous,
-        "light on": smart_home_service.light_switch,
-        "light off": smart_home_service.light_switch,
+        "play music": spotify_service.play,
+        "stop music": spotify_service.stop,
+        "next music": spotify_service.next,
+        "previous music": spotify_service.previous,
+        "next page": smart_mirrow_next,
+        "previous page": smart_mirrow_previous,
     }
     
     variable_commands = {
-        "set color to": smart_home_service.change_color,
-        "set brightness to": smart_home_service.set_rgb_color,
+        "color to": smart_home_service.set_color_by_name,
+        "colour to": smart_home_service.set_color_by_name,
+        "brightness to": smart_home_service.set_rgb_color,
         "increase volume with": spotify_service.increase_volume,
         "decrease volume with": spotify_service.decrease_volume,
         "set volume to": spotify_service.set_volume,
+        "light": smart_home_service.light_switch,
+
     }
     
     if command in simple_commands:
         simple_commands[command]()
         return
     
-    for key, func in variable_commands.items():
-        if not command.startswith(key): return
-        value = command[len(key):].split()[0]
+    print(variable_commands.keys())
+    for key in variable_commands:
+        print(f"Checking command: {command} against key: {key}")
+        if command.find(key)== -1: continue
         try: 
+            value = command[len(key):].split()[0]
             value = int(value)
         except ValueError:
             try:
-                func(value)
+                variable_commands[key](value)
+                return
             except Exception as e:
                 print(f"Error executing command '{command}': {e}")
+        except Exception as e:
+            print(f"Error parsing command '{command}': {e}")
+            return
+        
+def smart_mirrow_next():
+    """Function to handle the 'next' command for the smart mirror."""
+    print("next page")
+    socketio.emit("smart_mirror_next")
+
+def smart_mirrow_previous():
+    """Function to handle the 'previous' command for the smart mirror."""
+    print("prev page")
+    socketio.emit("smart_mirror_previous")
 
 def gesture_command_handler(gesture: str):
+    
     global smart_home_service
     global spotify_service
     
-    raise NotImplementedError
+    #closed_fist, down, left, ok, open_fist, peace, right, rock, stop, up, none
+    simple_commands = {
+        "closed_fist": spotify_service.play,
+        "open_palm": spotify_service.stop,
+        "right": spotify_service.next,
+        "left": spotify_service.previous,
+        "up":  smart_mirrow_next,
+        "down": smart_mirrow_previous,
+    }
+    
+    if gesture in simple_commands:
+        simple_commands[gesture]()
+        return
     
 if __name__ == '__main__':
-    socketio.run(app)
+    socketio.run(app, port=4444)
     
