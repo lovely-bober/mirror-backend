@@ -2,3 +2,8 @@ flask
 flask_socketio
 SpeechRecognition
 pyaudio
+opencv-python-headless
+mediapipe
+requests
+#picamera2
+#rpi-libcamera

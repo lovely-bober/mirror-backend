@@ -1,7 +1,6 @@
-from celery import shared_task
-import os
+import threading
 import speech_recognition as sr
-import concurrent.futures
+
 
 
 
@@ -9,10 +8,13 @@ class VoiceReconService:
     def __init__(self):
         self.recognizer = sr.Recognizer()
         self.microphone = sr.Microphone()
-    def recognize_voice_async(self): 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            future = executor.submit(recognize_voice, self.recognizer, self.microphone)
-            return future
+        self.current_voice_command = None
+        thread = threading.Thread(target=self.main_loop, daemon=True)
+        thread.start()
+    def main_loop(self):
+        while True:
+            self.current_voice_command = recognize_voice(self.recognizer, self.microphone)
+            
 def recognize_voice(recognizer, microphone) -> str | None:
         with microphone as source:
             #print("Say something!")
@@ -25,3 +27,5 @@ def recognize_voice(recognizer, microphone) -> str | None:
         except Exception as e:
             print(f"Could not understand audio: {e}")
             return None
+        
+        
